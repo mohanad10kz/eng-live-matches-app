@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SectionList, Image, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
+import { View, Text, StyleSheet, SectionList, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const LeagueHeader = ({ league }) => (
   <View style={styles.leagueHeader}>
-    <Image source={{ uri: league.logo }} style={styles.leagueLogo} />
+    <Image source={{ uri: league.logo }} style={styles.leagueLogo} contentFit="contain" transition={1000} />
     <Text style={styles.leagueName}>{league.title}</Text>
   </View>
 );
@@ -15,7 +16,7 @@ const MatchCard = ({ match }) => {
   return (
     <View style={styles.matchCard}>
       <View style={styles.teamContainer}>
-        <Image source={{ uri: match.homeTeam.crest }} style={styles.logo} />
+        <Image source={{ uri: match.homeTeam.crest }} style={styles.logo} contentFit="contain" transition={1000} />
         <Text style={styles.teamName} numberOfLines={1} ellipsizeMode='tail'>{match.homeTeam.name}</Text>
       </View>
       <View style={styles.timeContainer}>
@@ -26,7 +27,7 @@ const MatchCard = ({ match }) => {
       </View>
       <View style={[styles.teamContainer, { justifyContent: 'flex-end' }]}>
         <Text style={styles.teamName} numberOfLines={1} ellipsizeMode='tail'>{match.awayTeam.name}</Text>
-        <Image source={{ uri: match.awayTeam.crest }} style={styles.logo} />
+        <Image source={{ uri: match.awayTeam.crest }} style={styles.logo} contentFit="contain" transition={1000} />
       </View>
     </View>
   );

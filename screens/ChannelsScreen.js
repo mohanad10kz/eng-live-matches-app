@@ -1,13 +1,14 @@
 import React, { useState, useRef } from "react";
+import { Image } from "expo-image";
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
-  Image,
   TouchableOpacity,
   Modal,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { Video } from "expo-av";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -42,7 +43,7 @@ const DUMMY_CHANNELS = [
 const ChannelCard = ({ item, onPress }) => (
   <TouchableOpacity style={styles.channelCard} onPress={() => onPress(item)}>
     <View style={styles.logoContainer}>
-      <Image source={{ uri: item.logo }} style={styles.logo} />
+      <Image source={{ uri: item.logo }} style={styles.logo} contentFit="contain" transition={1000} />
     </View>
     <Text style={styles.channelName}>{item.name}</Text>
   </TouchableOpacity>
@@ -51,11 +52,15 @@ const ChannelCard = ({ item, onPress }) => (
 const ChannelsScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedChannel, setSelectedChannel] = useState(null);
+  const [isVideoLoading, setIsVideoLoading] = useState(true);
+  const [videoError, setVideoError] = useState(null);
   const videoRef = useRef(null);
 
   const openModal = (channel) => {
     setSelectedChannel(channel);
     setModalVisible(true);
+    setIsVideoLoading(true);
+    setVideoError(null);
   };
 
   const closeModal = () => {
@@ -100,7 +105,23 @@ const ChannelsScreen = () => {
               shouldPlay
               style={styles.video}
               useNativeControls
+              onLoadStart={() => setIsVideoLoading(true)}
+              onLoad={() => setIsVideoLoading(false)}
+              onError={(e) => {
+                setIsVideoLoading(false);
+                setVideoError("Cannot play this stream right now.");
+              }}
             />
+            {isVideoLoading && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="large" color="#fff" />
+              </View>
+            )}
+            {videoError && (
+              <View style={styles.errorOverlay}>
+                <Text style={styles.errorText}>{videoError}</Text>
+              </View>
+            )}
             <SafeAreaView style={styles.closeButtonContainer}>
               <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
                 <Text style={styles.closeButtonText}>X</Text>
@@ -140,7 +161,6 @@ const styles = StyleSheet.create({
   logo: {
     width: "70%",
     height: "70%",
-    resizeMode: "contain",
   },
   channelName: {
     fontWeight: "bold",
@@ -156,6 +176,22 @@ const styles = StyleSheet.create({
   video: {
     flex: 1,
     alignSelf: "stretch",
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  errorOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#000",
+  },
+  errorText: {
+    color: "red",
+    fontSize: 18,
   },
   closeButtonContainer: {
     position: "absolute",
