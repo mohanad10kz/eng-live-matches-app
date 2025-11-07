@@ -7,7 +7,6 @@ import {
   FlatList,
   TouchableOpacity,
   Modal,
-  Platform,
   ActivityIndicator,
 } from "react-native";
 import { Video } from "expo-av";
@@ -45,8 +44,8 @@ const ChannelCard = ({ item, onPress }) => (
     <View style={styles.logoContainer}>
       <Image
         source={{ uri: item.logo }}
-        style={styles.logo}
-        contentFit="contain"
+        style={{ width: 50, height: 50, borderRadius: 25 }}
+        contentFit="cover"
         transition={1000}
       />
     </View>

@@ -1,8 +1,7 @@
-
-import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import MatchesScreen from '../screens/MatchesScreen';
-import ChannelsScreen from '../screens/ChannelsScreen';
+import React from "react";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import MatchesScreen from "../screens/MatchesScreen";
+import ChannelsScreen from "../screens/ChannelsScreen";
 
 const Tab = createBottomTabNavigator();
 
