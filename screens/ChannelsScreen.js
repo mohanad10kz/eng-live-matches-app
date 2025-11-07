@@ -1,5 +1,4 @@
 import React, { useState, useRef } from "react";
-import { Image } from "expo-image";
 import {
   View,
   Text,
@@ -9,8 +8,9 @@ import {
   Modal,
   ActivityIndicator,
 } from "react-native";
-import Video from "react-native-video"; // <--- البطل الجديد
+import { VLCPlayer, VlCPlayerView } from "react-native-vlc-media-player";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Image } from "expo-image";
 
 const DUMMY_CHANNELS = [
   {
@@ -25,6 +25,18 @@ const DUMMY_CHANNELS = [
     logo: "https://i.imgur.com/uJvMisQ.jpeg",
     streamUrl: "https://102.38.4.226/live/gitest/gitest/6575.ts",
   },
+  {
+    id: "3",
+    name: "beIN Sports 3",
+    logo: "https://i.imgur.com/uJvMisQ.jpeg",
+    streamUrl: "https://102.38.4.226/live/gitest/gitest/6576.ts",
+  },
+  {
+    id: "4",
+    name: "beIN Sports 4",
+    logo: "https://i.imgur.com/uJvMisQ.jpeg",
+    streamUrl: "https://102.38.4.226/live/gitest/gitest/6577.ts",
+  },
   // ... يمكنك إضافة المزيد
 ];
 
@@ -33,21 +45,22 @@ const ChannelCard = ({ item, onPress }) => (
     <View style={styles.logoContainer}>
       <Image
         source={{ uri: item.logo }}
-        style={{ width: 50, height: 50, borderRadius: 25 }}
-        contentFit="cover"
-        transition={1000}
+        style={styles.logo}
+        contentFit="contain"
+        transition={500}
       />
     </View>
-    <Text style={styles.channelName}>{item.name}</Text>
+    <Text style={styles.channelName} numberOfLines={1}>
+      {item.name}
+    </Text>
   </TouchableOpacity>
 );
 
 const ChannelsScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedChannel, setSelectedChannel] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // للتحميل
-  const [isError, setIsError] = useState(false); // للخطأ
-  const videoRef = useRef(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
 
   const openModal = (channel) => {
     setSelectedChannel(channel);
@@ -79,47 +92,26 @@ const ChannelsScreen = () => {
       {selectedChannel && (
         <Modal
           animationType="slide"
-          transparent={false}
           visible={modalVisible}
-          supportedOrientations={["landscape", "portrait"]}
           onRequestClose={closeModal}
         >
           <View style={styles.modalContainer}>
-            {/* المشغل الجديد بكامل قوته */}
-            <Video
-              ref={videoRef}
-              source={{
-                uri: selectedChannel.streamUrl,
-                // إضافة هيدرز مهمة جداً لسيرفرات IPTV
-                headers: {
-                  "User-Agent":
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-                },
-              }}
+            <VLCPlayer
               style={styles.video}
-              controls={true} // إظهار أزرار التحكم الأصلية
-              resizeMode="contain" // الحفاظ على أبعاد الفيديو
-              onLoadStart={() => {
-                setIsLoading(true);
-                setIsError(false);
-              }}
-              onLoad={() => setIsLoading(false)} // عندما يبدأ الفيديو فعلياً
-              onBuffer={({ isBuffering }) => setIsLoading(isBuffering)} // إظهار التحميل عند التقطيع
-              onError={(e) => {
-                console.log("Video Error:", e);
+              videoAspectRatio="16:9"
+              source={{ uri: selectedChannel.streamUrl }}
+              onBuffering={() => setIsLoading(true)}
+              onPlaying={() => setIsLoading(false)}
+              onError={() => {
                 setIsLoading(false);
                 setIsError(true);
               }}
             />
-
-            {/* مؤشر التحميل */}
             {isLoading && !isError && (
               <View style={styles.centerOverlay}>
                 <ActivityIndicator size="large" color="#fff" />
               </View>
             )}
-
-            {/* رسالة الخطأ */}
             {isError && (
               <View style={styles.centerOverlay}>
                 <Text style={styles.errorText}>
@@ -127,13 +119,9 @@ const ChannelsScreen = () => {
                 </Text>
               </View>
             )}
-
-            {/* زر الإغلاق */}
-            <SafeAreaView style={styles.closeButtonContainer}>
-              <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
-                <Text style={styles.closeButtonText}>X</Text>
-              </TouchableOpacity>
-            </SafeAreaView>
+            <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
+              <Text style={styles.closeButtonText}>X</Text>
+            </TouchableOpacity>
           </View>
         </Modal>
       )}
@@ -142,82 +130,50 @@ const ChannelsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f0f2f5",
-  },
+  container: { flex: 1, backgroundColor: "#f0f2f5" },
   channelCard: {
     backgroundColor: "#fff",
     borderRadius: 20,
-    aspectRatio: 1,
     width: "48%",
+    aspectRatio: 1,
+    padding: 10,
     alignItems: "center",
     justifyContent: "center",
-    padding: 10,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    elevation: 4,
   },
   logoContainer: {
     flex: 1,
+    width: "100%",
     justifyContent: "center",
     alignItems: "center",
   },
-  channelName: {
-    fontWeight: "bold",
-    fontSize: 14,
-    marginTop: 10,
-    textAlign: "center",
-  },
+  logo: { width: 50, height: 50 },
+  channelName: { fontWeight: "bold", marginTop: 8, textAlign: "center" },
   modalContainer: {
     flex: 1,
     backgroundColor: "#000",
     justifyContent: "center",
   },
-  video: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    bottom: 0,
-    right: 0,
-  },
+  video: { width: "100%", height: "100%" },
   centerOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.4)",
-    zIndex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
-  errorText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  closeButtonContainer: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    zIndex: 2,
-  },
+  errorText: { color: "white", fontSize: 18, fontWeight: "bold" },
   closeButton: {
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    position: "absolute",
+    top: 40,
+    right: 20,
+    backgroundColor: "rgba(0,0,0,0.6)",
     borderRadius: 20,
     width: 40,
     height: 40,
     justifyContent: "center",
     alignItems: "center",
   },
-  closeButtonText: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
+  closeButtonText: { color: "#fff", fontSize: 20, fontWeight: "bold" },
 });
 
 export default ChannelsScreen;
