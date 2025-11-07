@@ -18,32 +18,37 @@ const DUMMY_CHANNELS = [
     id: "1",
     name: "beIN Sports 1",
     logo: "https://i.imgur.com/qDUwm6i.jpeg",
-    streamUrl: "http://102.38.4.226/live/gitest/gitest/6574.ts",
+    streamUrl: "https://102.38.4.226/live/gitest/gitest/6574.ts",
   },
   {
     id: "2",
     name: "beIN Sports 2",
     logo: "https://i.imgur.com/uJvMisQ.jpeg",
-    streamUrl: "http://102.38.4.226/live/gitest/gitest/6575.ts",
+    streamUrl: "https://102.38.4.226/live/gitest/gitest/6575.ts",
   },
   {
     id: "3",
     name: "beIN Sports 3",
     logo: "https://images.seeklogo.com/logo-png/48/1/bein-sports-3-logo-png_seeklogo-481585.png",
-    streamUrl: "http://102.38.4.226/live/gitest/gitest/6576.ts",
+    streamUrl: "https://102.38.4.226/live/gitest/gitest/6576.ts",
   },
   {
     id: "4",
     name: "beIN Sports 4",
     logo: "https://seeklogo.com/vector-logo/367812/bein-sports",
-    streamUrl: "http://102.38.4.226/live/gitest/gitest/6577.ts",
+    streamUrl: "https://102.38.4.226/live/gitest/gitest/6577.ts",
   },
 ];
 
 const ChannelCard = ({ item, onPress }) => (
   <TouchableOpacity style={styles.channelCard} onPress={() => onPress(item)}>
     <View style={styles.logoContainer}>
-      <Image source={{ uri: item.logo }} style={styles.logo} contentFit="contain" transition={1000} />
+      <Image
+        source={{ uri: item.logo }}
+        style={styles.logo}
+        contentFit="contain"
+        transition={1000}
+      />
     </View>
     <Text style={styles.channelName}>{item.name}</Text>
   </TouchableOpacity>
