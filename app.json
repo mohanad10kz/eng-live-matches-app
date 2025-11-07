@@ -23,7 +23,8 @@
       },
       "usesCleartextTraffic": true,
       "edgeToEdgeEnabled": true,
-      "package": "com.engineer.liveMatchesApp"
+      "package": "com.engineer.liveMatchesApp",
+      "minSdkVersion": 26
     },
     "web": {
       "favicon": "./assets/icon.png"
