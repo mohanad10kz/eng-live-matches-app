@@ -9,7 +9,7 @@ import {
   Modal,
   ActivityIndicator,
 } from "react-native";
-import { Video } from "expo-av";
+import { Video, ResizeMode } from "expo-av";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const DUMMY_CHANNELS = [
@@ -101,19 +101,28 @@ const ChannelsScreen = () => {
           <View style={styles.modalContainer}>
             <Video
               ref={videoRef}
-              source={{ uri: selectedChannel.streamUrl }}
-              rate={1.0}
-              volume={1.0}
-              isMuted={false}
-              resizeMode="contain"
-              shouldPlay
               style={styles.video}
+              source={{
+                uri: selectedChannel.streamUrl,
+                overrideFileExtensionAndroid: "ts", // Crucial for .ts files on Android
+                headers: {
+                  "User-Agent":
+                    "Mozilla/5.0 (Linux; Android 10; Mobile; rv:88.0) Gecko/88.0 Firefox/88.0", // Mobile User-Agent often works better for IPTV
+                  Connection: "keep-alive",
+                },
+              }}
               useNativeControls
+              resizeMode={ResizeMode.CONTAIN}
+              isLooping={false}
+              shouldPlay={true}
               onLoadStart={() => setIsVideoLoading(true)}
               onLoad={() => setIsVideoLoading(false)}
               onError={(e) => {
+                console.log("Video Error:", e);
                 setIsVideoLoading(false);
-                setVideoError("Cannot play this stream right now.");
+                setVideoError(
+                  "Cannot play this stream format. Try a different channel."
+                );
               }}
             />
             {isVideoLoading && (
