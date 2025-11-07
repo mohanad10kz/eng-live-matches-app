@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React from "react";
 import { Image } from "expo-image";
 import {
   View,
@@ -6,10 +6,9 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Modal,
-  ActivityIndicator,
+  Linking, // <--- استيراد مهم جداً
+  Alert,
 } from "react-native";
-import { Video, ResizeMode } from "expo-av";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const DUMMY_CHANNELS = [
@@ -17,26 +16,17 @@ const DUMMY_CHANNELS = [
     id: "1",
     name: "beIN Sports 1",
     logo: "https://i.imgur.com/qDUwm6i.jpeg",
+    // تأكد من أن هذا الرابط يعمل حقاً عند فتحه في VLC يدوياً
     streamUrl: "https://102.38.4.226/live/gitest/gitest/6574.ts",
   },
+  // ... باقي قنواتك
   {
     id: "2",
     name: "beIN Sports 2",
     logo: "https://i.imgur.com/uJvMisQ.jpeg",
     streamUrl: "https://102.38.4.226/live/gitest/gitest/6575.ts",
   },
-  {
-    id: "3",
-    name: "beIN Sports 3",
-    logo: "https://images.seeklogo.com/logo-png/48/1/bein-sports-3-logo-png_seeklogo-481585.png",
-    streamUrl: "https://102.38.4.226/live/gitest/gitest/6576.ts",
-  },
-  {
-    id: "4",
-    name: "beIN Sports 4",
-    logo: "https://seeklogo.com/vector-logo/367812/bein-sports",
-    streamUrl: "https://102.38.4.226/live/gitest/gitest/6577.ts",
-  },
+  // ...
 ];
 
 const ChannelCard = ({ item, onPress }) => (
@@ -54,25 +44,27 @@ const ChannelCard = ({ item, onPress }) => (
 );
 
 const ChannelsScreen = () => {
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedChannel, setSelectedChannel] = useState(null);
-  const [isVideoLoading, setIsVideoLoading] = useState(true);
-  const [videoError, setVideoError] = useState(null);
-  const videoRef = useRef(null);
+  // دالة جديدة لفتح الرابط في مشغل خارجي
+  const openInExternalPlayer = async (channel) => {
+    try {
+      // محاولة فتح الرابط. نظام أندرويد سيعرض المشغلات المتاحة (VLC, MX Player, etc.)
+      const supported = await Linking.canOpenURL(channel.streamUrl);
 
-  const openModal = (channel) => {
-    setSelectedChannel(channel);
-    setModalVisible(true);
-    setIsVideoLoading(true);
-    setVideoError(null);
-  };
-
-  const closeModal = () => {
-    if (videoRef.current) {
-      videoRef.current.stopAsync();
+      if (supported) {
+        await Linking.openURL(channel.streamUrl);
+      } else {
+        Alert.alert(
+          "Error",
+          "Cannot open this stream link. You might need a video player app like VLC."
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        "An error occurred while trying to open the stream."
+      );
+      console.error("Linking Error:", error);
     }
-    setModalVisible(false);
-    setSelectedChannel(null);
   };
 
   return (
@@ -80,7 +72,7 @@ const ChannelsScreen = () => {
       <FlatList
         data={DUMMY_CHANNELS}
         renderItem={({ item }) => (
-          <ChannelCard item={item} onPress={openModal} />
+          <ChannelCard item={item} onPress={openInExternalPlayer} />
         )}
         keyExtractor={(item) => item.id}
         numColumns={2}
@@ -90,63 +82,11 @@ const ChannelsScreen = () => {
           marginBottom: 15,
         }}
       />
-      {selectedChannel && (
-        <Modal
-          animationType="slide"
-          transparent={false}
-          visible={modalVisible}
-          supportedOrientations={["landscape", "portrait"]}
-          onRequestClose={closeModal}
-        >
-          <View style={styles.modalContainer}>
-            <Video
-              ref={videoRef}
-              style={styles.video}
-              source={{
-                uri: selectedChannel.streamUrl,
-                overrideFileExtensionAndroid: "ts", // Crucial for .ts files on Android
-                headers: {
-                  "User-Agent":
-                    "Mozilla/5.0 (Linux; Android 10; Mobile; rv:88.0) Gecko/88.0 Firefox/88.0", // Mobile User-Agent often works better for IPTV
-                  Connection: "keep-alive",
-                },
-              }}
-              useNativeControls
-              resizeMode={ResizeMode.CONTAIN}
-              isLooping={false}
-              shouldPlay={true}
-              onLoadStart={() => setIsVideoLoading(true)}
-              onLoad={() => setIsVideoLoading(false)}
-              onError={(e) => {
-                console.log("Video Error:", e);
-                setIsVideoLoading(false);
-                setVideoError(
-                  "Cannot play this stream format. Try a different channel."
-                );
-              }}
-            />
-            {isVideoLoading && (
-              <View style={styles.loadingOverlay}>
-                <ActivityIndicator size="large" color="#fff" />
-              </View>
-            )}
-            {videoError && (
-              <View style={styles.errorOverlay}>
-                <Text style={styles.errorText}>{videoError}</Text>
-              </View>
-            )}
-            <SafeAreaView style={styles.closeButtonContainer}>
-              <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
-                <Text style={styles.closeButtonText}>X</Text>
-              </TouchableOpacity>
-            </SafeAreaView>
-          </View>
-        </Modal>
-      )}
     </SafeAreaView>
   );
 };
 
+// ... نفس الـ styles السابقة تماماً، يمكنك حذف styles المودال والفيديو لأننا لم نعد نحتاجها
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -171,59 +111,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  logo: {
-    width: "70%",
-    height: "70%",
-  },
   channelName: {
     fontWeight: "bold",
     fontSize: 14,
     marginTop: 10,
     textAlign: "center",
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: "#000",
-  },
-  video: {
-    flex: 1,
-    alignSelf: "stretch",
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  errorOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000",
-  },
-  errorText: {
-    color: "red",
-    fontSize: 18,
-  },
-  closeButtonContainer: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    zIndex: 1,
-  },
-  closeButton: {
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    borderRadius: 20,
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  closeButtonText: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "bold",
   },
 });
 
