@@ -2,11 +2,11 @@
   "expo": {
     "name": "المهندس لمشاهدة المباريات",
     "slug": "live-matches-app",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -23,12 +23,22 @@
       },
       "usesCleartextTraffic": true,
       "edgeToEdgeEnabled": true,
-      "package": "com.engineer.liveMatchesApp",
-      "minSdkVersion": 26
+      "package": "com.engineer.liveMatchesApp"
     },
     "web": {
       "favicon": "./assets/icon.png"
     },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26,
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "9c4e47ac-a4a6-432f-94d9-72a48c6afa2f"
