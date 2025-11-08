@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,12 +6,12 @@ import {
   FlatList,
   TouchableOpacity,
   Modal,
-  ActivityIndicator,
 } from "react-native";
-import { VLCPlayer, VlCPlayerView } from "react-native-vlc-media-player";
+import { VLCPlayer } from "react-native-vlc-media-player";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 
+// ... (بيانات القنوات DUMMY_CHANNELS و ChannelCard كما هي)
 const DUMMY_CHANNELS = [
   {
     id: "1",
@@ -45,7 +45,7 @@ const ChannelCard = ({ item, onPress }) => (
     <View style={styles.logoContainer}>
       <Image
         source={{ uri: item.logo }}
-        style={styles.logo}
+        style={{ width: 60, height: 60 }}
         contentFit="contain"
         transition={500}
       />
@@ -59,29 +59,36 @@ const ChannelCard = ({ item, onPress }) => (
 const ChannelsScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedChannel, setSelectedChannel] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
 
-  const openModal = (channel) => {
-    setSelectedChannel(channel);
-    setModalVisible(true);
-    setIsLoading(true);
-    setIsError(false);
-  };
-
-  const closeModal = () => {
-    setModalVisible(false);
-    setSelectedChannel(null);
-  };
+  // أهم جزء في هذه المحاولة: خيارات VLC النووية
+  const vlcOptions = [
+    "--network-caching=3000", // زيادة الكاش لتجنب التقطيع
+    "--live-caching=3000",
+    "--http-reconnect", // إعادة المحاولة بقوة
+    "--rtsp-tcp", // استخدام TCP الأكثر استقراراً
+    "--no-drop-late-frames",
+    "--no-skip-frames",
+    // هذه الخيارات هي الأمل الأخير لتجاوز مشاكل الشهادات (قد لا تعمل في كل إصدارات أندرويد)
+    "--gnutls-cache-timeout=0", // محاولة تعطيل كاش الشهادات
+    "--insecure", // (محاولة يائسة) بعض نسخ VLC القديمة تقبل هذا العلم
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
         data={DUMMY_CHANNELS}
-        renderItem={({ item }) => (
-          <ChannelCard item={item} onPress={openModal} />
-        )}
         keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <ChannelCard
+            item={item}
+            onPress={(channel) => {
+              setSelectedChannel(channel);
+              setModalVisible(true);
+              setIsError(false);
+            }}
+          />
+        )}
         numColumns={2}
         contentContainerStyle={{ padding: 15 }}
         columnWrapperStyle={{
@@ -89,39 +96,47 @@ const ChannelsScreen = () => {
           marginBottom: 15,
         }}
       />
+
       {selectedChannel && (
         <Modal
-          animationType="slide"
+          animationType="fade"
           visible={modalVisible}
-          onRequestClose={closeModal}
+          onRequestClose={() => setModalVisible(false)}
         >
           <View style={styles.modalContainer}>
             <VLCPlayer
               style={styles.video}
-              videoAspectRatio="16:9"
-              source={{ uri: selectedChannel.streamUrl }}
-              onBuffering={() => setIsLoading(true)}
-              onPlaying={() => setIsLoading(false)}
-              onError={() => {
-                setIsLoading(false);
-                setIsError(true);
+              source={{
+                uri: selectedChannel.streamUrl,
+                initOptions: vlcOptions, // تمرير الخيارات هنا
+                // محاولة أخيرة لخداع السيرفر بالهيدرز أيضاً
+                headers: {
+                  "User-Agent": "VLC/3.0.18 LibVLC/3.0.18", // انتحال شخصية VLC الرسمي تماماً
+                },
               }}
+              autoAspectRatio={true}
+              resizeMode="contain"
+              onError={() => setIsError(true)}
             />
-            {isLoading && !isError && (
-              <View style={styles.centerOverlay}>
-                <ActivityIndicator size="large" color="#fff" />
-              </View>
-            )}
+
+            {/* زر إغلاق بسيط */}
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => {
+                setModalVisible(false);
+                setSelectedChannel(null);
+              }}
+            >
+              <Text style={styles.closeText}>إغلاق</Text>
+            </TouchableOpacity>
+
             {isError && (
-              <View style={styles.centerOverlay}>
+              <View style={styles.errorOverlay}>
                 <Text style={styles.errorText}>
-                  عذراً، البث غير متاح حالياً.
+                  تعذر تشغيل القناة (مشكلة شهادة أمنية)
                 </Text>
               </View>
             )}
-            <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>X</Text>
-            </TouchableOpacity>
           </View>
         </Modal>
       )}
@@ -130,50 +145,54 @@ const ChannelsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f0f2f5" },
+  // ... (نفس الستايل السابق)
+  container: { flex: 1, backgroundColor: "#f5f5f5" },
   channelCard: {
     backgroundColor: "#fff",
-    borderRadius: 20,
     width: "48%",
     aspectRatio: 1,
-    padding: 10,
-    alignItems: "center",
     justifyContent: "center",
-    elevation: 4,
+    alignItems: "center",
+    borderRadius: 15,
+    padding: 10,
+    elevation: 3,
   },
   logoContainer: {
     flex: 1,
-    width: "100%",
     justifyContent: "center",
     alignItems: "center",
+    width: "100%",
   },
-  logo: { width: 50, height: 50 },
-  channelName: { fontWeight: "bold", marginTop: 8, textAlign: "center" },
+  channelName: {
+    marginTop: 10,
+    fontWeight: "600",
+    fontSize: 14,
+    color: "#333",
+  },
   modalContainer: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: "black",
     justifyContent: "center",
   },
   video: { width: "100%", height: "100%" },
-  centerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  errorText: { color: "white", fontSize: 18, fontWeight: "bold" },
   closeButton: {
     position: "absolute",
     top: 40,
     right: 20,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    borderRadius: 20,
-    width: 40,
-    height: 40,
+    backgroundColor: "rgba(255,0,0,0.8)",
+    padding: 10,
+    borderRadius: 8,
+    zIndex: 10,
+  },
+  closeText: { color: "white", fontWeight: "bold" },
+  errorOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.8)",
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 5,
   },
-  closeButtonText: { color: "#fff", fontSize: 20, fontWeight: "bold" },
+  errorText: { color: "white", fontSize: 18 },
 });
 
 export default ChannelsScreen;
